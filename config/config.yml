@@ -1,0 +1,28 @@
+# Configuración de la aplicación Rakiduam
+app:
+  name: Rakiduam
+  env: production
+  port: 8080
+  debug: false
+  timezone: America/Santiago
+  jwt_secret: changeme-in-production
+  jwt_expiry: 24h
+
+# ldap Configuración de LDAP para autenticación
+ldap:
+  host: ldap.example.com
+  port: 389
+  baseDN: dc=example,dc=com
+  bindDN: cn=admin,dc=example,dc=com
+  bindPass: secret
+  useTLS: false
+
+# Configuración de PostgreSQL para almacenamiento de usuarios y MFA
+postgres:
+  host: localhost
+  port: 5432
+  database: rakiduam
+  username: rakiduam
+  password: secret
+  sslMode: disable
+  maxOpenConns: 25

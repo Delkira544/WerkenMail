@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: build/docker/Dockerfile
+    container_name: api
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    env_file:
+      - ../.env
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - GIN_MODE=release
+    depends_on:
+      openldap:
+        condition: service_healthy
+
+  openldap:
+    image: ghcr.io/inf-uct/ldap:latest
+    container_name: dev-ldap
+    ports:
+      - "389:389"
+    volumes:
+      - ../config/ldap/users.ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom/30-users.ldif
+    command: "--copy-service"
+    healthcheck: # ← agregar
+      test:
+        [
+          "CMD-SHELL",
+          "ldapsearch -x -H ldap://localhost -b dc=inf,dc=uct,dc=cl -D cn=admin,dc=inf,dc=uct,dc=cl -w admin | grep -q 'numEntries'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
