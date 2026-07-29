@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 
@@ -12,6 +11,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 )
 
 func NewPool(cfg config.PostgresConfig) (*pgxpool.Pool, error) {
@@ -42,8 +42,8 @@ func NewPool(cfg config.PostgresConfig) (*pgxpool.Pool, error) {
 
 // NewSQLDB expone un *sql.DB puente sobre el pool de pgx, para código
 // (como database/sql-based repositories) que no habla directamente pgxpool.
-func NewSQLDB(pool *pgxpool.Pool) *sql.DB {
-	return stdlib.OpenDBFromPool(pool)
+func NewSQLDB(pool *pgxpool.Pool) *sqlx.DB {
+	return sqlx.NewDb(stdlib.OpenDBFromPool(pool), "pgx")
 }
 
 func RunMigrations(pool *pgxpool.Pool, migrationsPath string) error {

@@ -20,8 +20,8 @@ type tokenRepository struct {
 
 // NewTokenRepository recibe *sql.DB y lo envuelve internamente con sqlx.
 // Así el caller (wire.go) no se entera de sqlx y es compatible con user.NewUserRepository.
-func NewTokenRepository(db *sql.DB) TokenRepository {
-	return &tokenRepository{db: sqlx.NewDb(db, "postgres")}
+func NewTokenRepository(db *sqlx.DB) TokenRepository {
+	return &tokenRepository{db: db}
 }
 
 // FindByHash — sqlx.GetContext mapea fila a struct automáticamente
