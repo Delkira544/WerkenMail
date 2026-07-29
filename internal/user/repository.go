@@ -5,25 +5,26 @@ import (
 	"database/sql"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
 )
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
-	FindByLDAPUID(ctx context.Context, ldapUID string) (*User, error)
+	FindByUsername(ctx context.Context, username string) (*User, error)
 }
 
 type userRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewUserRepository(db *sql.DB) UserRepository {
+func NewUserRepository(db *sqlx.DB) UserRepository {
 	return &userRepository{db: db}
 }
 
 func (r *userRepository) Create(ctx context.Context, user *User) error {
-	query := `INSERT INTO users (id, ldap_uid, full_name, email)
-			  VALUES ($1, $2, $3, $4)`
-	_, err := r.db.ExecContext(ctx, query, user.ID, user.LDAPUID, user.FullName, user.Email)
+	query := `INSERT INTO users (id, username, name, role, email)
+			  VALUES (:id, :username, :name, :role, :email)`
+	_, err := r.db.NamedExecContext(ctx, query, user)
 
 	if err != nil {
 		return err
@@ -32,12 +33,11 @@ func (r *userRepository) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (r *userRepository) FindByLDAPUID(ctx context.Context, ldapUID string) (*User, error) {
-	query := `SELECT id, ldap_uid, full_name, email FROM users WHERE ldap_uid = $1`
-	row := r.db.QueryRowContext(ctx, query, ldapUID)
-
+func (r *userRepository) FindByUsername(ctx context.Context, username string) (*User, error) {
 	var user User
-	err := row.Scan(&user.ID, &user.LDAPUID, &user.FullName, &user.Email)
+	query := `SELECT id, username, name, role,  email FROM users WHERE username = $1`
+	err := r.db.GetContext(ctx, &user, query, username)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No se encontró el usuario
@@ -46,5 +46,21 @@ func (r *userRepository) FindByLDAPUID(ctx context.Context, ldapUID string) (*Us
 	}
 
 	return &user, nil
+}
 
+func (r *userRepository) Upsert(ctx context.Context, user *User) error {
+	query := `INSERT INTO users (id, username, name, role, email)
+			  VALUES (:id, :username, :name, :role, :email)
+			  ON CONFLICT (id)
+			  DO UPDATE SET
+				name = EXCLUDED.name,
+				role = EXCLUDED.role,
+			  	email = EXCLUDED.email`
+	_, err := r.db.NamedExecContext(ctx, query, user)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

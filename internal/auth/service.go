@@ -14,22 +14,23 @@ type Service interface {
 }
 
 type authService struct {
-	authRepo  Repository
+	ldapRepo  LDAPRepository
+	tokenRepo TokenRepository
 	userRepo  user.UserService
 	jwtSecret string
 	jwtExpiry time.Duration
 }
 
-func NewService(repo Repository, userRepo user.UserService, jwtSecret, jwtExpiry string) Service {
+func NewService(ldapRepo LDAPRepository, tokenRepo TokenRepository, userRepo user.UserService, jwtSecret, jwtExpiry string) Service {
 	d, err := time.ParseDuration(jwtExpiry)
 	if err != nil {
 		d = time.Hour * 24 // default to 24 hours if parsing fails
 	}
-	return &authService{authRepo: repo, userRepo: userRepo, jwtSecret: jwtSecret, jwtExpiry: d}
+	return &authService{ldapRepo: ldapRepo, tokenRepo: tokenRepo, userRepo: userRepo, jwtSecret: jwtSecret, jwtExpiry: d}
 }
 
 func (s *authService) Login(req LoginRequest) (*Session, error) {
-	ldapUser, err := s.authRepo.Authenticate(req.Username, req.Password)
+	ldapUser, err := s.ldapRepo.Authenticate(req.Username, req.Password)
 	if err != nil {
 		return nil, ErrInvalidCredentials
 	}

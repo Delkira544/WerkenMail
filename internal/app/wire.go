@@ -21,8 +21,9 @@ func buildHandlers(sqlDB *sql.DB, ldapClient *ldapclient.Client, cfg config.Conf
 	userRepo := user.NewUserRepository(sqlDB)
 	userSvc := user.NewUserService(userRepo)
 
-	authRepo := auth.NewRepository(ldapClient, cfg.LDAP.BaseDN)
-	authSvc := auth.NewService(authRepo, userSvc, cfg.App.JWTSecret, cfg.App.JWTExpiry)
+	authRepo := auth.NewTokenRepository(sqlDB)
+	ldapRepo := auth.NewLDAPRepository(ldapClient, cfg.LDAP.BaseDN)
+	authSvc := auth.NewService(ldapRepo, authRepo, userSvc, cfg.App.JWTSecret, cfg.App.JWTExpiry)
 
 	return &Handlers{
 		Auth: auth.NewHandler(authSvc),

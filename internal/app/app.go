@@ -41,7 +41,7 @@ func New(cfg config.Config) (*App, func(), error) {
 	}
 
 	handlers := buildHandlers(sqlDB, ldapClient, cfg)
-	router := NewRouter(handlers)
+	router := NewRouter(handlers, cfg)
 
 	cleanup := func() {
 		sqlDB.Close()

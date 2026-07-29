@@ -7,8 +7,8 @@ import (
 )
 
 type UserService interface {
-	CreateUser(ctx context.Context, user *CreateUserRequest) error
-	GetUserByLDAPUID(ctx context.Context, ldapUID string) (*User, error)
+	Create(ctx context.Context, user *CreateUserRequest) error
+	GetByUsername(ctx context.Context, ldapUID string) (*User, error)
 }
 
 type userService struct {
@@ -19,11 +19,12 @@ func NewUserService(repo UserRepository) UserService {
 	return &userService{repo: repo}
 }
 
-func (s *userService) CreateUser(ctx context.Context, req *CreateUserRequest) error {
+func (s *userService) Create(ctx context.Context, req *CreateUserRequest) error {
 	user := &User{
 		ID:       uuid.New(),
-		LDAPUID:  req.LDAPUID,
-		FullName: req.FullName,
+		Username: req.Username,
+		Name:     req.Name,
+		Role:     req.Role,
 		Email:    req.Email,
 	}
 
@@ -35,8 +36,8 @@ func (s *userService) CreateUser(ctx context.Context, req *CreateUserRequest) er
 	return nil
 }
 
-func (s *userService) GetUserByLDAPUID(ctx context.Context, ldapUID string) (*User, error) {
-	user, err := s.repo.FindByLDAPUID(ctx, ldapUID)
+func (s *userService) GetByUsername(ctx context.Context, ldapUID string) (*User, error) {
+	user, err := s.repo.FindByUsername(ctx, ldapUID)
 	if err != nil {
 		return nil, err
 	}

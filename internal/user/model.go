@@ -8,8 +8,9 @@ import (
 
 type User struct {
 	ID        uuid.UUID  `db:"id"`
-	LDAPUID   string     `db:"ldap_uid"`
-	FullName  string     `db:"full_name"`
+	Username  string     `db:"username"`
+	Name      string     `db:"name"`
+	Role      string     `db:"role"`
 	Email     string     `db:"email"`
 	CreatedAt *time.Time `db:"created_at"`
 }

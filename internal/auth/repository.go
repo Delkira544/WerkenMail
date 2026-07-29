@@ -1,73 +1,64 @@
 package auth
 
 import (
-	"fmt"
-	"log"
+	"context"
+	"database/sql"
 
-	ldapclient "github.com/Delkira544/rakiduam/internal/platform/ldap"
-	"github.com/go-ldap/ldap/v3"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 )
 
-type Repository interface {
-	Authenticate(username, password string) (*User, error)
-	FindByUsername(username string) (*User, error)
+type TokenRepository interface {
+	Create(ctx context.Context, rt *RefreshToken) error
+	FindByHash(ctx context.Context, hash string) (*RefreshToken, error)
+	Revoke(ctx context.Context, id uuid.UUID) error
+	RevokeAllByUserID(ctx context.Context, userID string) error
+}
+type tokenRepository struct {
+	db *sqlx.DB
 }
 
-type ldapUserRepository struct {
-	client *ldapclient.Client
-	baseDN string
+// NewTokenRepository recibe *sql.DB y lo envuelve internamente con sqlx.
+// Así el caller (wire.go) no se entera de sqlx y es compatible con user.NewUserRepository.
+func NewTokenRepository(db *sql.DB) TokenRepository {
+	return &tokenRepository{db: sqlx.NewDb(db, "postgres")}
 }
 
-func NewRepository(client *ldapclient.Client, baseDN string) Repository {
-	return &ldapUserRepository{client: client, baseDN: baseDN}
-}
-
-func (r *ldapUserRepository) Authenticate(username, password string) (*User, error) {
-	user, err := r.FindByUsername(username)
+// FindByHash — sqlx.GetContext mapea fila a struct automáticamente
+func (r *tokenRepository) FindByHash(ctx context.Context, hash string) (*RefreshToken, error) {
+	var rt RefreshToken
+	err := r.db.GetContext(ctx, &rt,
+		`SELECT id, user_id, token_hash, expires_at, created_at, revoked_at
+         FROM refresh_tokens WHERE token_hash = $1`, hash)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
 		return nil, err
 	}
-
-	// Bind con las credenciales del usuario para validar password
-	userConn, err := ldap.Dial("tcp", r.client.Addr())
-	if err != nil {
-		return nil, fmt.Errorf("error conectando: %w", err)
-	}
-	defer userConn.Close() // se cierra siempre, sin afectar la conexión admin
-
-	err = userConn.Bind(user.DN, password)
-	if err != nil {
-		return nil, nil // credenciales inválidas, no es error de sistema
-	}
-
-	return user, nil
+	return &rt, nil
 }
 
-func (r *ldapUserRepository) FindByUsername(username string) (*User, error) {
-	searchRequest := ldap.NewSearchRequest(
-		r.baseDN,
-		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		fmt.Sprintf("(uid=%s)", ldap.EscapeFilter(username)),
-		[]string{"dn", "cn", "mail", "uid", "gidNumber"},
-		nil,
-	)
+// Create — ExecContext igual que database/sql
+func (r *tokenRepository) Create(ctx context.Context, rt *RefreshToken) error {
+	_, err := r.db.ExecContext(ctx,
+		`INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at)
+         VALUES ($1, $2, $3, $4)`,
+		rt.ID, rt.UserID, rt.TokenHash, rt.ExpiresAt)
+	return err
+}
 
-	result, err := r.client.Conn().Search(searchRequest)
-	if err != nil {
-		log.Printf("error lo, %w", err)
-		return nil, fmt.Errorf("error buscando usuario: %w", err)
-	}
-	if len(result.Entries) == 0 {
-		log.Printf("error ")
-		return nil, fmt.Errorf("usuario no encontrado")
-	}
+// Revoke — UPDATE con named params
+func (r *tokenRepository) Revoke(ctx context.Context, id uuid.UUID) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE refresh_tokens SET revoked_at = NOW() WHERE id = $1`, id)
+	return err
+}
 
-	entry := result.Entries[0]
-	return &User{
-		Username: entry.GetAttributeValue("uid"),
-		FullName: entry.GetAttributeValue("cn"),
-		Email:    entry.GetAttributeValue("mail"),
-		Role:     ToRole(entry.GetAttributeValue("gidNumber")),
-		DN:       entry.DN,
-	}, nil
+// RevokeAllByUserID — revocación masiva
+func (r *tokenRepository) RevokeAllByUserID(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx,
+		`UPDATE refresh_tokens SET revoked_at = NOW()
+         WHERE user_id = $1 AND revoked_at IS NULL`, userID)
+	return err
 }
