@@ -27,3 +27,8 @@ postgres:
   password: secret
   sslMode: disable
   maxOpenConns: 25
+
+logger:
+  level: info
+  format: text
+  output: stdout

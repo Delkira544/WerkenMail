@@ -4,6 +4,7 @@ type Config struct {
 	App      AppConfig
 	LDAP     LDAPConfig
 	Postgres PostgresConfig
+	Log      LogConfig
 }
 
 type AppConfig struct {
@@ -34,4 +35,10 @@ type PostgresConfig struct {
 	Password     string
 	SSLMode      string
 	MaxOpenConns int
+}
+
+type LogConfig struct {
+	Level  string
+	Format string
+	Output string
 }

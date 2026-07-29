@@ -29,11 +29,14 @@ func bindEnvVars(v *viper.Viper) {
 
 	bindings := map[string]string{
 		// App
-		"app.name":     "APP_NAME",
-		"app.env":      "APP_ENV",
-		"app.port":     "APP_PORT",
-		"app.debug":    "APP_DEBUG",
-		"app.timezone": "TIMEZONE",
+		"app.name":                 "APP_NAME",
+		"app.env":                  "APP_ENV",
+		"app.port":                 "APP_PORT",
+		"app.debug":                "APP_DEBUG",
+		"app.timezone":             "TIMEZONE",
+		"app.jwtSecret":            "JWT_SECRET",
+		"app.jwtExpiration":        "JWT_EXPIRATION",
+		"app.jwtRefreshExpiration": "JWT_REFRESH_EXPIRATION",
 
 		// LDAP
 		"ldap.host":     "LDAP_HOST",
@@ -51,6 +54,11 @@ func bindEnvVars(v *viper.Viper) {
 		"postgres.password":     "DATABASE_PASSWORD",
 		"postgres.sslMode":      "DATABASE_SSL_MODE",
 		"postgres.maxOpenConns": "DATABASE_MAX_OPEN_CONNS",
+
+		// Logger
+		"logger.level":  "LOGGER_LEVEL",
+		"logger.format": "LOGGER_FORMAT",
+		"logger.output": "LOGGER_OUTPUT",
 	}
 
 	for key, env := range bindings {
@@ -83,6 +91,12 @@ func buildConfig(v *viper.Viper) *Config {
 			Password:     v.GetString("postgres.password"),
 			SSLMode:      v.GetString("postgres.sslMode"),
 			MaxOpenConns: v.GetInt("postgres.maxOpenConns"),
+		},
+
+		Log: LogConfig{
+			Level:  v.GetString("logger.level"),
+			Format: v.GetString("logger.format"),
+			Output: v.GetString("logger.output"),
 		},
 	}
 }

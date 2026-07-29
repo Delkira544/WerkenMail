@@ -4,10 +4,12 @@ import (
 	"context"
 	"time"
 
+	"github.com/Delkira544/rakiduam/internal/platform/logger"
 	sharedauth "github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/Delkira544/rakiduam/internal/shared/errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Service interface {
@@ -43,22 +45,23 @@ func NewService(ldapAuth LDAPGateway, tokenRepo TokenRepository, userSvc UserAda
 }
 
 func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginResponse, error) {
-	// ── 1. Autenticar contra LDAP ──
+	log := logger.FromContext(ctx)
+
 	ldapUser, err := s.ldapAuth.Authenticate(req.Username, req.Password)
 	if err != nil {
-		return nil, ErrInvalidCredentials // error de sistema
+		return nil, errors.Internal("") // error de sistema
 	}
 	if ldapUser == nil {
 		return nil, ErrInvalidCredentials // credenciales inválidas
 	}
-	// ── 2. Upsert en users local (cachear role) ──
+
 	_ = s.userSvc.SyncFromLDAP(ctx, &SyncUserRequest{
 		Username: ldapUser.Username,
 		Name:     ldapUser.FullName,
 		Email:    ldapUser.Email,
 		Role:     ldapUser.Role.String(),
 	})
-	// ── 3. Generar access_token ──
+
 	now := time.Now()
 	accessClaims := &sharedauth.Claims{
 		Role: ldapUser.Role.String(),
@@ -72,12 +75,12 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	if err != nil {
 		return nil, errors.Internal("failed to sign token")
 	}
-	// ── 4. Generar refresh_token aleatorio ──
+
 	rawToken, hash, err := generateRefreshToken()
 	if err != nil {
 		return nil, errors.Internal("failed to generate refresh token")
 	}
-	// ── 5. Persistir hash en DB ──
+
 	err = s.tokenRepo.Create(ctx, &RefreshToken{
 		ID:        uuid.New(),
 		UserID:    ldapUser.Username,
@@ -87,10 +90,12 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	if err != nil {
 		return nil, errors.Internal("failed to store refresh token")
 	}
-	// ── 6. Responder ──
+
+	log.Info("Authentication successful for user: ", zap.String("username", ldapUser.Username))
 	return &LoginResponse{
 		AccessToken:  accessToken,
 		RefreshToken: rawToken, // ← solo se ve 1 vez
 		ExpiresIn:    int64(s.jwtExpiry.Seconds()),
+		Role:         ldapUser.Role.String(),
 	}, nil
 }

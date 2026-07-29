@@ -5,6 +5,7 @@ import (
 
 	"github.com/Delkira544/rakiduam/config"
 	"github.com/Delkira544/rakiduam/internal/middleware"
+	"github.com/Delkira544/rakiduam/internal/platform/logger"
 	"github.com/Delkira544/rakiduam/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
@@ -13,7 +14,8 @@ import (
 // grupos de rutas versionadas de cada feature.
 func NewRouter(h *Handlers, cfg config.Config) *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Logger())
+	r.Use(middleware.RequestID())
+	r.Use(middleware.Logger(logger.L()))
 	r.Use(middleware.Recovery())
 	r.Use(middleware.ErrorInterceptor())
 
