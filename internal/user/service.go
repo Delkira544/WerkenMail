@@ -9,6 +9,7 @@ import (
 type UserService interface {
 	Create(ctx context.Context, user *CreateUserRequest) error
 	GetByUsername(ctx context.Context, ldapUID string) (*User, error)
+	SyncFromLDAP(ctx context.Context, req *CreateUserRequest) error
 }
 
 type userService struct {
@@ -42,4 +43,14 @@ func (s *userService) GetByUsername(ctx context.Context, ldapUID string) (*User,
 		return nil, err
 	}
 	return user, nil
+}
+func (s *userService) SyncFromLDAP(ctx context.Context, req *CreateUserRequest) error {
+	user := &User{
+		ID:       uuid.New(),
+		Username: req.Username,
+		Name:     req.Name,
+		Role:     req.Role,
+		Email:    req.Email,
+	}
+	return s.repo.Upsert(ctx, user)
 }

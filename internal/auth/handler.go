@@ -21,7 +21,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	session, err := h.svc.Login(req)
+	session, err := h.svc.Login(c.Request.Context(), req)
 	if err != nil {
 		c.Error(err)
 		return

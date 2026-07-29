@@ -11,6 +11,7 @@ import (
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
 	FindByUsername(ctx context.Context, username string) (*User, error)
+	Upsert(ctx context.Context, user *User) error
 }
 
 type userRepository struct {
@@ -51,7 +52,7 @@ func (r *userRepository) FindByUsername(ctx context.Context, username string) (*
 func (r *userRepository) Upsert(ctx context.Context, user *User) error {
 	query := `INSERT INTO users (id, username, name, role, email)
 			  VALUES (:id, :username, :name, :role, :email)
-			  ON CONFLICT (id)
+			  ON CONFLICT (username)
 			  DO UPDATE SET
 				name = EXCLUDED.name,
 				role = EXCLUDED.role,

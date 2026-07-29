@@ -5,9 +5,9 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-type Session struct {
-	Token     string `json:"token"`
-	ExpiresAt int64  `json:"expires_at"`
-	UserID    string `json:"user_id"`
-	Role      string `json:"role"`
+type LoginResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	ExpiresIn    int64  `json:"expires_at"`
+	Role         string `json:"role"`
 }

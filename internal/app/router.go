@@ -27,7 +27,7 @@ func NewRouter(h *Handlers, cfg config.Config) *gin.Engine {
 	prueba := v1.Group("/prueba")
 	prueba.Use(middleware.AuthRequired(cfg.App.JWTSecret))
 	{
-		prueba.GET("/student", middleware.RequireRole("func"), func(c *gin.Context) {
+		prueba.GET("/student", middleware.RequireRole("student"), func(c *gin.Context) {
 			response.OK(c, "Acceso permitido estudiante")
 		})
 		prueba.GET("/func", middleware.RequireRole("func"), func(c *gin.Context) {

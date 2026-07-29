@@ -7,6 +7,7 @@ app:
   timezone: America/Santiago
   jwt_secret: changeme-in-production
   jwt_expiry: 24h
+  refresh_expiry: 720h
 
 # ldap Configuración de LDAP para autenticación
 ldap:
