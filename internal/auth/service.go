@@ -6,7 +6,6 @@ import (
 
 	sharedauth "github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/Delkira544/rakiduam/internal/shared/errors"
-	"github.com/Delkira544/rakiduam/internal/user"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
@@ -15,16 +14,20 @@ type Service interface {
 	Login(c context.Context, req LoginRequest) (*LoginResponse, error)
 }
 
+type UserAdaptService interface {
+	SyncFromLDAP(ctx context.Context, req *SyncUserRequest) error
+}
+
 type authService struct {
-	ldapAuth      LDAPRepository
+	ldapAuth      LDAPGateway
 	tokenRepo     TokenRepository
-	userSvc       user.UserService
+	userSvc       UserAdaptService
 	jwtSecret     string
 	jwtExpiry     time.Duration
 	refreshExpiry time.Duration
 }
 
-func NewService(ldapAuth LDAPRepository, tokenRepo TokenRepository, userSvc user.UserService, jwtSecret, jwtExpiry, refExpiry string) Service {
+func NewService(ldapAuth LDAPGateway, tokenRepo TokenRepository, userSvc UserAdaptService, jwtSecret, jwtExpiry, refExpiry string) Service {
 	d, err := time.ParseDuration(jwtExpiry)
 	if err != nil {
 		d = time.Hour * 24 // default to 24 hours if parsing fails
@@ -49,7 +52,7 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 		return nil, ErrInvalidCredentials // credenciales inválidas
 	}
 	// ── 2. Upsert en users local (cachear role) ──
-	_ = s.userSvc.SyncFromLDAP(ctx, &user.CreateUserRequest{
+	_ = s.userSvc.SyncFromLDAP(ctx, &SyncUserRequest{
 		Username: ldapUser.Username,
 		Name:     ldapUser.FullName,
 		Email:    ldapUser.Email,

@@ -11,3 +11,11 @@ type LoginResponse struct {
 	ExpiresIn    int64  `json:"expires_at"`
 	Role         string `json:"role"`
 }
+
+// DTO for adapters
+type SyncUserRequest struct {
+	Username string
+	Name     string
+	Email    string
+	Role     string
+}

@@ -8,21 +8,21 @@ import (
 	"github.com/go-ldap/ldap/v3"
 )
 
-type LDAPRepository interface {
+type LDAPGateway interface {
 	Authenticate(username, password string) (*User, error)
 	FindByUsername(username string) (*User, error)
 }
 
-type ldapRepository struct {
+type ldapGateway struct {
 	client *ldapclient.Client
 	baseDN string
 }
 
-func NewLDAPRepository(client *ldapclient.Client, baseDN string) LDAPRepository {
-	return &ldapRepository{client: client, baseDN: baseDN}
+func NewLDAPRepository(client *ldapclient.Client, baseDN string) LDAPGateway {
+	return &ldapGateway{client: client, baseDN: baseDN}
 }
 
-func (r *ldapRepository) Authenticate(username, password string) (*User, error) {
+func (r *ldapGateway) Authenticate(username, password string) (*User, error) {
 	user, err := r.FindByUsername(username)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (r *ldapRepository) Authenticate(username, password string) (*User, error) 
 	return user, nil
 }
 
-func (r *ldapRepository) FindByUsername(username string) (*User, error) {
+func (r *ldapGateway) FindByUsername(username string) (*User, error) {
 	searchRequest := ldap.NewSearchRequest(
 		r.baseDN,
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
