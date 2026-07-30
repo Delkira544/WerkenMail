@@ -1,6 +1,7 @@
 package projects
 
 import (
+	"github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/Delkira544/rakiduam/internal/shared/errors"
 	"github.com/Delkira544/rakiduam/internal/shared/response"
 	"github.com/gin-gonic/gin"
@@ -22,14 +23,14 @@ func (h *Handler) CreateProject(c *gin.Context) {
 		return
 	}
 
-	userID, exists := c.Get("user_id")
-	if !exists {
-		c.Error(errors.Unauthorized("user_id not found in context"))
+	identity, err := auth.FromGin(c)
+	if err != nil {
+		c.Error(err)
 		return
 	}
 
 	input := &CreateProjectInput{
-		UserID:      uuid.MustParse(userID.(string)),
+		UserID:      identity.UserID,
 		Name:        req.Name,
 		Description: req.Description,
 	}
@@ -49,9 +50,14 @@ func (h *Handler) ListProjects(c *gin.Context) {
 		c.Error(errors.BadRequest(err.Error()))
 		return
 	}
-	userID := c.GetString("user_id")
-	role := c.GetString("role")
-	projects, err := h.svc.List(c.Request.Context(), userID, role, req)
+
+	identity, err := auth.FromGin(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	projects, err := h.svc.List(c.Request.Context(), identity, req)
 	if err != nil {
 		c.Error(err)
 		return
@@ -72,10 +78,13 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id")
-	role := c.GetString("role")
+	identity, err := auth.FromGin(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
 
-	project, err := h.svc.Update(c.Request.Context(), id, userID, role, req)
+	project, err := h.svc.Update(c.Request.Context(), id, identity, req)
 	if err != nil {
 		c.Error(err)
 		return

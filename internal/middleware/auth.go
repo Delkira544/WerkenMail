@@ -37,7 +37,7 @@ func AuthRequired(jwtSecret string) gin.HandlerFunc {
 			return
 		}
 		c.Set("user_id", claims.Subject)
-		c.Set("role", claims.Role)
+		c.Set("role", claims.Role.String())
 		c.Next()
 	}
 }

@@ -3,15 +3,16 @@ package projects
 import (
 	"context"
 
+	"github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/Delkira544/rakiduam/internal/shared/errors"
 	"github.com/google/uuid"
 )
 
 type Service interface {
 	Create(ctx context.Context, input *CreateProjectInput) (*ProjectResponse, error)
-	List(ctx context.Context, callerID string, callerRole string, req ListProjectRequest) ([]ProjectResponse, error)
-	Update(ctx context.Context, id uuid.UUID, callerID, callerRole string, req UpdateProjectRequest) (*ProjectResponse, error)
-	Delete(ctx context.Context, id uuid.UUID, callerID, callerRole string) error
+	List(ctx context.Context, identity auth.Identity, req ListProjectRequest) ([]ProjectResponse, error)
+	Update(ctx context.Context, id uuid.UUID, identity auth.Identity, req UpdateProjectRequest) (*ProjectResponse, error)
+	Delete(ctx context.Context, id uuid.UUID, identity auth.Identity) error
 	GetProjectByID(ctx context.Context, id string) (*ProjectResponse, error)
 }
 
@@ -50,10 +51,12 @@ func (s *service) GetProjectByID(ctx context.Context, id string) (*ProjectRespon
 	return project.ToResponse(), nil
 }
 
-func (s *service) List(ctx context.Context, callerID string, callerRole string, req ListProjectRequest) ([]ProjectResponse, error) {
+func (s *service) List(ctx context.Context, identity auth.Identity, req ListProjectRequest) ([]ProjectResponse, error) {
 	filter := ProjectFilter{}
-	if callerRole == "student" {
-		filter.UserID = &callerID
+
+	if identity.IsStudent() {
+		uid := identity.UserID.String()
+		filter.UserID = &uid
 	}
 
 	if req.Search != nil {
@@ -72,7 +75,7 @@ func (s *service) List(ctx context.Context, callerID string, callerRole string, 
 	return toResponse(projects), nil
 }
 
-func (s *service) Update(ctx context.Context, id uuid.UUID, callerID, callerRole string, req UpdateProjectRequest) (*ProjectResponse, error) {
+func (s *service) Update(ctx context.Context, id uuid.UUID, identity auth.Identity, req UpdateProjectRequest) (*ProjectResponse, error) {
 	project, err := s.repo.GetProjectByID(ctx, id.String())
 	if err != nil {
 		return nil, errors.Internal("get project by id")
@@ -80,7 +83,7 @@ func (s *service) Update(ctx context.Context, id uuid.UUID, callerID, callerRole
 	if project == nil {
 		return nil, errors.NotFound("project not found")
 	}
-	if callerRole == "student" && project.UserID.String() != callerID {
+	if identity.IsStudent() && project.UserID.String() != identity.UserID.String() {
 		return nil, errors.Forbidden("not the owner")
 	}
 
@@ -97,6 +100,6 @@ func (s *service) Update(ctx context.Context, id uuid.UUID, callerID, callerRole
 	return project.ToResponse(), nil
 }
 
-func (s *service) Delete(ctx context.Context, id uuid.UUID, callerID, callerRole string) error {
+func (s *service) Delete(ctx context.Context, id uuid.UUID, identity auth.Identity) error {
 	return nil
 }

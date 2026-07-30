@@ -6,6 +6,7 @@ import (
 	"github.com/Delkira544/rakiduam/config"
 	"github.com/Delkira544/rakiduam/internal/middleware"
 	"github.com/Delkira544/rakiduam/internal/platform/logger"
+	"github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/Delkira544/rakiduam/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
@@ -28,10 +29,10 @@ func NewRouter(h *Handlers, cfg config.Config) *gin.Engine {
 	prueba := v1.Group("/prueba")
 	prueba.Use(middleware.AuthRequired(cfg.App.JWTSecret))
 	{
-		prueba.GET("/student", middleware.RequireRole("student"), func(c *gin.Context) {
+		prueba.GET("/student", middleware.RequireRole(auth.RoleStudent), func(c *gin.Context) {
 			response.OK(c, "Acceso permitido estudiante")
 		})
-		prueba.GET("/func", middleware.RequireRole("func"), func(c *gin.Context) {
+		prueba.GET("/func", middleware.RequireRole(auth.RoleFunc), func(c *gin.Context) {
 			response.OK(c, "Acceso permitido funcionario")
 		})
 	}

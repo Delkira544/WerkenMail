@@ -1,13 +1,14 @@
 package middleware
 
 import (
+	sharedauth "github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/Delkira544/rakiduam/internal/shared/errors"
 	"github.com/gin-gonic/gin"
 )
 
-func RequireRole(roles ...string) gin.HandlerFunc {
+func RequireRole(roles ...sharedauth.Role) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userRole := c.GetString("role")
+		userRole := sharedauth.Role(c.GetString("role"))
 		for _, r := range roles {
 			if r == userRole {
 				c.Next()

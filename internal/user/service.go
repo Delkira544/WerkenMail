@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 
+	authshared "github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/google/uuid"
 )
 
@@ -25,7 +26,7 @@ func (s *userService) Create(ctx context.Context, req *CreateUserRequest) error 
 		ID:       uuid.New(),
 		Username: req.Username,
 		Name:     req.Name,
-		Role:     req.Role,
+		Role:     authshared.ToRole(req.Role),
 		Email:    req.Email,
 	}
 
@@ -50,7 +51,7 @@ func (s *userService) SyncFromLDAP(ctx context.Context, req *CreateUserRequest) 
 		ID:       uuid.New(),
 		Username: req.Username,
 		Name:     req.Name,
-		Role:     req.Role,
+		Role:     authshared.ToRole(req.Role),
 		Email:    req.Email,
 	}
 	u, err := s.repo.Upsert(ctx, user)

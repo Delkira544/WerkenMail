@@ -3,35 +3,18 @@ package auth
 import (
 	"time"
 
+	authshared "github.com/Delkira544/rakiduam/internal/shared/auth"
 	"github.com/google/uuid"
 )
 
-type UserRole int
-
-const (
-	RoleStudent UserRole = iota
-	RoleFunc
-)
-
-func (r UserRole) String() string {
-	switch r {
-	case RoleStudent:
-		return "student"
-	case RoleFunc:
-		return "func"
-	default:
-		return "student"
-	}
-}
-
-func ToRole(roleStr string) UserRole {
-	switch roleStr {
+func ToRole(gidNumber string) authshared.Role {
+	switch gidNumber {
 	case "600":
-		return RoleStudent
+		return authshared.RoleStudent
 	case "500":
-		return RoleFunc
+		return authshared.RoleFunc
 	default:
-		return RoleStudent // Default role if not recognized
+		return authshared.RoleStudent // Default role if not recognized
 	}
 }
 
@@ -40,7 +23,7 @@ type User struct {
 	FullName string
 	Email    string
 	DN       string
-	Role     UserRole
+	Role     authshared.Role
 }
 
 type RefreshToken struct {
