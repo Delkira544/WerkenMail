@@ -101,5 +101,19 @@ func (s *service) Update(ctx context.Context, id uuid.UUID, identity auth.Identi
 }
 
 func (s *service) Delete(ctx context.Context, id uuid.UUID, identity auth.Identity) error {
+	project, err := s.repo.GetProjectByID(ctx, id.String())
+	if err != nil {
+		return errors.Internal("get project by id")
+	}
+	if project == nil {
+		return errors.NotFound("project not found")
+	}
+	if identity.IsStudent() && project.UserID.String() != identity.UserID.String() {
+		return errors.Forbidden("not the owner")
+	}
+
+	if err := s.repo.Delete(ctx, id.String()); err != nil {
+		return errors.Internal("delete project")
+	}
 	return nil
 }

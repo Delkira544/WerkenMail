@@ -92,6 +92,26 @@ func (h *Handler) UpdateProject(c *gin.Context) {
 	response.OK(c, project)
 }
 
+func (h *Handler) DeleteProject(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.Error(errors.BadRequest("invalid project ID"))
+		return
+	}
+
+	identity, err := auth.FromGin(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	err = h.svc.Delete(c.Request.Context(), id, identity)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+}
+
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	project := rg.Group("/projects")
 	project.Use(authMiddleware)
@@ -99,5 +119,6 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		project.POST("", h.CreateProject)
 		project.GET("", h.ListProjects)
 		project.PATCH("/:id", h.UpdateProject)
+		project.DELETE("/:id", h.DeleteProject)
 	}
 }
