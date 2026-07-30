@@ -36,7 +36,7 @@ func ToRole(roleStr string) UserRole {
 }
 
 type User struct {
-	Username string ``
+	Username string
 	FullName string
 	Email    string
 	DN       string
@@ -45,7 +45,7 @@ type User struct {
 
 type RefreshToken struct {
 	ID        uuid.UUID  `db:"id"`
-	UserID    string     `db:"user_id"`
+	UserID    uuid.UUID  `db:"user_id"`
 	TokenHash string     `db:"token_hash"`
 	ExpiresAt time.Time  `db:"expires_at"`
 	CreatedAt time.Time  `db:"created_at"`

@@ -17,7 +17,7 @@ type Service interface {
 }
 
 type UserAdaptService interface {
-	SyncFromLDAP(ctx context.Context, req *SyncUserRequest) error
+	SyncFromLDAP(ctx context.Context, req *SyncUserRequest) (*SyncUserResponse, error)
 }
 
 type authService struct {
@@ -55,12 +55,15 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 		return nil, ErrInvalidCredentials // credenciales inválidas
 	}
 
-	_ = s.userSvc.SyncFromLDAP(ctx, &SyncUserRequest{
+	localUser, err := s.userSvc.SyncFromLDAP(ctx, &SyncUserRequest{
 		Username: ldapUser.Username,
 		Name:     ldapUser.FullName,
 		Email:    ldapUser.Email,
 		Role:     ldapUser.Role.String(),
 	})
+	if err != nil {
+		return nil, errors.Internal("failed to sync user")
+	}
 
 	now := time.Now()
 	accessClaims := &sharedauth.Claims{
@@ -83,7 +86,7 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 
 	err = s.tokenRepo.Create(ctx, &RefreshToken{
 		ID:        uuid.New(),
-		UserID:    ldapUser.Username,
+		UserID:    localUser.ID,
 		TokenHash: hash,
 		ExpiresAt: now.Add(s.refreshExpiry),
 	})

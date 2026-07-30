@@ -8,8 +8,8 @@ import (
 
 type UserService interface {
 	Create(ctx context.Context, user *CreateUserRequest) error
-	GetByUsername(ctx context.Context, ldapUID string) (*User, error)
-	SyncFromLDAP(ctx context.Context, req *CreateUserRequest) error
+	GetByUsername(ctx context.Context, ldapUID string) (*UserResponse, error)
+	SyncFromLDAP(ctx context.Context, req *CreateUserRequest) (*UserResponse, error)
 }
 
 type userService struct {
@@ -37,14 +37,15 @@ func (s *userService) Create(ctx context.Context, req *CreateUserRequest) error 
 	return nil
 }
 
-func (s *userService) GetByUsername(ctx context.Context, ldapUID string) (*User, error) {
+func (s *userService) GetByUsername(ctx context.Context, ldapUID string) (*UserResponse, error) {
 	user, err := s.repo.FindByUsername(ctx, ldapUID)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return user.ToResponse(), nil
 }
-func (s *userService) SyncFromLDAP(ctx context.Context, req *CreateUserRequest) error {
+
+func (s *userService) SyncFromLDAP(ctx context.Context, req *CreateUserRequest) (*UserResponse, error) {
 	user := &User{
 		ID:       uuid.New(),
 		Username: req.Username,
@@ -52,5 +53,9 @@ func (s *userService) SyncFromLDAP(ctx context.Context, req *CreateUserRequest) 
 		Role:     req.Role,
 		Email:    req.Email,
 	}
-	return s.repo.Upsert(ctx, user)
+	u, err := s.repo.Upsert(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+	return u.ToResponse(), nil
 }

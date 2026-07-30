@@ -14,3 +14,14 @@ type User struct {
 	Email     string     `db:"email"`
 	CreatedAt *time.Time `db:"created_at"`
 }
+
+func (u *User) ToResponse() *UserResponse {
+	return &UserResponse{
+		ID:        u.ID.String(),
+		Username:  u.Username,
+		Name:      u.Name,
+		Email:     u.Email,
+		Role:      u.Role,
+		CreatedAt: u.CreatedAt.String(),
+	}
+}
