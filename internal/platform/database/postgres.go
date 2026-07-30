@@ -48,6 +48,7 @@ func NewSQLDB(pool *pgxpool.Pool) *sqlx.DB {
 
 func RunMigrations(pool *pgxpool.Pool, migrationsPath string) error {
 	db := stdlib.OpenDBFromPool(pool)
+	defer db.Close()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {

@@ -22,10 +22,9 @@ func NewRouter(h *Handlers, cfg config.Config) *gin.Engine {
 	r.GET("/health", healthCheck)
 
 	v1 := r.Group("/api/v1")
-	{
-		authGroup := v1.Group("/auth")
-		authGroup.POST("/login", h.Auth.Login)
-	}
+	h.Auth.RegisterRoutes(v1)
+	h.Project.RegisterRoutes(v1, middleware.AuthRequired(cfg.App.JWTSecret))
+
 	prueba := v1.Group("/prueba")
 	prueba.Use(middleware.AuthRequired(cfg.App.JWTSecret))
 	{

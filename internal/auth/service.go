@@ -69,7 +69,7 @@ func (s *authService) Login(ctx context.Context, req LoginRequest) (*LoginRespon
 	accessClaims := &sharedauth.Claims{
 		Role: ldapUser.Role.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   ldapUser.Username,
+			Subject:   localUser.ID.String(),
 			IssuedAt:  jwt.NewNumericDate(now),
 			ExpiresAt: jwt.NewNumericDate(now.Add(s.jwtExpiry)),
 		},

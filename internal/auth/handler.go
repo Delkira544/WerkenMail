@@ -29,3 +29,10 @@ func (h *Handler) Login(c *gin.Context) {
 
 	response.OK(c, session)
 }
+
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
+	auth := rg.Group("/auth")
+	{
+		auth.POST("/login", h.Login)
+	}
+}
