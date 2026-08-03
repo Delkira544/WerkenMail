@@ -5,14 +5,16 @@ import (
 	"github.com/Delkira544/rakiduam/internal/auth"
 	ldapclient "github.com/Delkira544/rakiduam/internal/platform/ldap"
 	"github.com/Delkira544/rakiduam/internal/projects"
+	"github.com/Delkira544/rakiduam/internal/template"
 	"github.com/Delkira544/rakiduam/internal/user"
 	"github.com/jmoiron/sqlx"
 )
 
 // Handlers agrupa los handlers HTTP de cada feature ya ensamblados.
 type Handlers struct {
-	Auth    *auth.Handler
-	Project *projects.Handler
+	Auth     *auth.Handler
+	Project  *projects.Handler
+	Template *template.Handler
 }
 
 // buildHandlers instancia repository -> service -> handler de cada feature,
@@ -30,8 +32,12 @@ func buildHandlers(sqlDB *sqlx.DB, ldapClient *ldapclient.Client, cfg config.Con
 	projectsRepo := projects.NewRepository(sqlDB)
 	projectsSvc := projects.NewService(projectsRepo)
 
+	templateRepo := template.NewRepository(sqlDB)
+	templateSvc := template.NewService(templateRepo)
+
 	return &Handlers{
-		Auth:    auth.NewHandler(authSvc),
-		Project: projects.NewHandler(projectsSvc),
+		Auth:     auth.NewHandler(authSvc),
+		Project:  projects.NewHandler(projectsSvc),
+		Template: template.NewHandler(templateSvc),
 	}
 }

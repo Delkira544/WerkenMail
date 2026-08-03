@@ -19,12 +19,12 @@ type Template struct {
 }
 
 type TemplateVariable struct {
-	ID            uuid.UUID `db:"id"`
-	TemplateID    uuid.UUID `db:"template_id"`
-	Key           string    `db:"key"`
-	Type          string    `db:"type"`
-	Required      bool      `db:"required"`
-	Default_Value *string   `db:"default_value"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
+	ID           uuid.UUID `db:"id"`
+	TemplateID   uuid.UUID `db:"template_id"`
+	Key          string    `db:"key"`
+	Type         string    `db:"type"`
+	Required     bool      `db:"required"`
+	DefaultValue *string   `db:"default_value"`
+	CreatedAt    time.Time `db:"created_at"`
+	UpdatedAt    time.Time `db:"updated_at"`
 }

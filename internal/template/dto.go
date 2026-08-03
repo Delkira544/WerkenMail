@@ -1,0 +1,59 @@
+package template
+
+import "github.com/Delkira544/rakiduam/internal/shared/emailtemplate"
+
+type CreateTemplateRequest struct {
+	Name      string                          `json:"name" validate:"required"`
+	Subject   string                          `json:"subject" validate:"required"`
+	BodyHtml  *string                         `json:"body_html" validate:"required"`
+	BodyText  *string                         `json:"body_text"`
+	Variables []CreateTemplateVariableRequest `json:"variables"`
+}
+
+type CreateTemplateVariableRequest struct {
+	Key          string  `json:"key" validate:"required"`
+	Type         string  `json:"type" validate:"required"`
+	Required     bool    `json:"required"`
+	DefaultValue *string `json:"default_value,omitempty"`
+}
+
+func toTemplateVariableRequests(vars []CreateTemplateVariableRequest) ([]emailtemplate.Variable, error) {
+	var templateVars []emailtemplate.Variable
+	for _, v := range vars {
+		tv, err := v.ToTemplateVariable()
+		if err != nil {
+			return nil, err
+		}
+		templateVars = append(templateVars, *tv)
+	}
+	return templateVars, nil
+}
+
+func (r *CreateTemplateVariableRequest) ToTemplateVariable() (*emailtemplate.Variable, error) {
+	return &emailtemplate.Variable{
+		Key:          r.Key,
+		Type:         emailtemplate.VariableType(r.Type),
+		Required:     r.Required,
+		DefaultValue: r.DefaultValue,
+	}, nil
+}
+
+type TemplateResponse struct {
+	ID                       string                     `json:"id"`
+	Name                     string                     `json:"name"`
+	Subject                  string                     `json:"subject"`
+	BodyHtml                 *string                    `json:"body_html,omitempty"`
+	BodyText                 *string                    `json:"body_text,omitempty"`
+	Version                  uint16                     `json:"version"`
+	TemplateVariableResponse []TemplateVariableResponse `json:"variables"`
+	CreatedAt                string                     `json:"created_at"`
+	UpdatedAt                string                     `json:"updated_at"`
+}
+
+type TemplateVariableResponse struct {
+	ID           string  `json:"id"`
+	Key          string  `json:"key"`
+	Type         string  `json:"type"`
+	Required     bool    `json:"required"`
+	DefaultValue *string `json:"default_value,omitempty"`
+}
