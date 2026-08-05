@@ -1,0 +1,486 @@
+openapi: 3.1.0
+info:
+  title: WerkenMail API
+  description: 'API WerkenMail: envoltorio compartido en lib/common.tsp, features en lib/features/.'
+  version: 0.0.0
+tags:
+  - name: Auth
+  - name: Projects
+  - name: Templates
+  - name: Health
+paths:
+  /auth/login:
+    post:
+      operationId: AuthService_login
+      summary: Autenticate
+      description: Authenticate a user and return the session.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: '#/components/schemas/Auth.LoginResponse'
+                description: 'Envelope de éxito: success=true + data (+ meta opcional).'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Auth.LoginRequest'
+  /health:
+    get:
+      operationId: HealthService_check
+      description: Health check del servicio.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health.HealthResponse'
+      tags:
+        - Health
+  /projects:
+    post:
+      operationId: ProjectsService_create
+      description: Crea un nuevo proyecto.
+      parameters: []
+      responses:
+        '201':
+          description: Envelope de éxito para HTTP 201 Created.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: '#/components/schemas/Projects.Project'
+                description: 'Envelope de éxito: success=true + data (+ meta opcional).'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Projects.CreateProjectRequest'
+      security:
+        - MyBearerAuth: []
+    get:
+      operationId: ProjectsService_list
+      description: Lista los proyectos del usuario.
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Projects.Project'
+                description: 'Envelope de éxito: success=true + data (+ meta opcional).'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Projects
+      security:
+        - MyBearerAuth: []
+  /projects/{id}:
+    patch:
+      operationId: ProjectsService_update
+      description: Actualiza un proyecto existente.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: '#/components/schemas/Projects.Project'
+                description: 'Envelope de éxito: success=true + data (+ meta opcional).'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Projects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Projects.UpdateProjectRequest'
+      security:
+        - MyBearerAuth: []
+    delete:
+      operationId: ProjectsService_delete
+      description: Elimina un proyecto.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: 'There is no content to send for this request, but the headers may be useful. '
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Projects
+      security:
+        - MyBearerAuth: []
+  /projects/{projectId}/templates:
+    post:
+      operationId: TemplatesService_create
+      description: Crea una plantilla dentro de un proyecto.
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                      - true
+                  data:
+                    $ref: '#/components/schemas/Templates.Template'
+                description: 'Envelope de éxito: success=true + data (+ meta opcional).'
+        default:
+          description: An unexpected error response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+      tags:
+        - Templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Templates.CreateTemplateRequest'
+      security:
+        - MyBearerAuth: []
+components:
+  schemas:
+    ApiError:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+      description: Cuerpo del error (response.APIError).
+    Auth.LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    Auth.LoginResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - expires_at
+        - role
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_at:
+          type: integer
+          format: int64
+        role:
+          type: string
+    ErrorCode:
+      type: string
+      enum:
+        - INTERNAL_ERROR
+        - UNAUTHORIZED
+        - NOT_FOUND
+        - FORBIDDEN
+        - BAD_REQUEST
+        - CONFLICT
+        - VALIDATION_ERROR
+      description: Códigos de error del wraper en shared/errors (errors.go).
+    ErrorEnvelope:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          enum:
+            - false
+        error:
+          $ref: '#/components/schemas/ApiError'
+      description: 'Envelope de error: success=false + error.'
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    Health.HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+    Projects.CreateProjectRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    Projects.Project:
+      type: object
+      required:
+        - id
+        - user_id
+        - name
+        - description
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    Projects.UpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+    Templates.CreateTemplateRequest:
+      type: object
+      required:
+        - name
+        - subject
+        - body_html
+      properties:
+        name:
+          type: string
+        subject:
+          type: string
+        body_html:
+          type: string
+        body_text:
+          type: string
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Templates.CreateTemplateVariableRequest'
+    Templates.CreateTemplateVariableRequest:
+      type: object
+      required:
+        - key
+        - type
+      properties:
+        key:
+          type: string
+        type:
+          type: string
+        required:
+          type: boolean
+        default_value:
+          type: string
+    Templates.Template:
+      type: object
+      required:
+        - id
+        - name
+        - subject
+        - version
+        - variables
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        subject:
+          type: string
+        body_html:
+          type: string
+        body_text:
+          type: string
+        version:
+          type: integer
+          format: uint16
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Templates.TemplateVariable'
+        created_at:
+          type: string
+        updated_at:
+          type: string
+    Templates.TemplateVariable:
+      type: object
+      required:
+        - id
+        - key
+        - type
+        - required
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        type:
+          type: string
+        required:
+          type: boolean
+        default_value:
+          type: string
+  securitySchemes:
+    MyBearerAuth:
+      type: http
+      scheme: Bearer
+      description: Bearer authentication header of the form `Bearer <token>`, where `<token>` is your auth token.
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Servidor de desarrollo
+    variables: {}
+  - url: https://kan.bn/api/v1
+    description: Servidor de producción
+    variables: {}

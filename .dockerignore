@@ -3,3 +3,4 @@ deployments/
 ldif/
 *.md
 .env
+docs/
