@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -11,7 +12,7 @@ type Repository interface {
 	Create(ctx context.Context, input *Project) error
 	Update(ctx context.Context, input *Project) error
 	Delete(ctx context.Context, id string) error
-	GetProjectByID(ctx context.Context, id string) (*Project, error)
+	GetProjectByID(ctx context.Context, id uuid.UUID) (*Project, error)
 	List(ctx context.Context, filter ProjectFilter) ([]Project, error)
 }
 
@@ -67,7 +68,7 @@ func (r *repository) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (r *repository) GetProjectByID(ctx context.Context, id string) (*Project, error) {
+func (r *repository) GetProjectByID(ctx context.Context, id uuid.UUID) (*Project, error) {
 	var project Project
 	query := `SELECT id, user_id, name, description, created_at, updated_at
 			  FROM projects

@@ -1,6 +1,11 @@
 package template
 
-import "github.com/Delkira544/rakiduam/internal/shared/emailtemplate"
+import (
+	"time"
+
+	"github.com/Delkira544/rakiduam/internal/shared/emailtemplate"
+	"github.com/google/uuid"
+)
 
 type CreateTemplateRequest struct {
 	Name      string                          `json:"name" validate:"required"`
@@ -39,21 +44,31 @@ func (r *CreateTemplateVariableRequest) ToTemplateVariable() (*emailtemplate.Var
 }
 
 type TemplateResponse struct {
-	ID                       string                     `json:"id"`
+	ID                       uuid.UUID                  `json:"id"`
 	Name                     string                     `json:"name"`
 	Subject                  string                     `json:"subject"`
 	BodyHtml                 *string                    `json:"body_html,omitempty"`
 	BodyText                 *string                    `json:"body_text,omitempty"`
 	Version                  uint16                     `json:"version"`
 	TemplateVariableResponse []TemplateVariableResponse `json:"variables"`
-	CreatedAt                string                     `json:"created_at"`
-	UpdatedAt                string                     `json:"updated_at"`
+	CreatedAt                time.Time                  `json:"created_at"`
+	UpdatedAt                time.Time                  `json:"updated_at"`
 }
 
 type TemplateVariableResponse struct {
-	ID           string  `json:"id"`
-	Key          string  `json:"key"`
-	Type         string  `json:"type"`
-	Required     bool    `json:"required"`
-	DefaultValue *string `json:"default_value,omitempty"`
+	ID           uuid.UUID `json:"id"`
+	Key          string    `json:"key"`
+	Type         string    `json:"type"`
+	Required     bool      `json:"required"`
+	DefaultValue *string   `json:"default_value,omitempty"`
+}
+
+// ProjectResponse represents the response structure for a project.
+type ProjectResponse struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Name        string
+	Description string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

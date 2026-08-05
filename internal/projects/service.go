@@ -13,7 +13,7 @@ type Service interface {
 	List(ctx context.Context, identity auth.Identity, req ListProjectRequest) ([]ProjectResponse, error)
 	Update(ctx context.Context, id uuid.UUID, identity auth.Identity, req UpdateProjectRequest) (*ProjectResponse, error)
 	Delete(ctx context.Context, id uuid.UUID, identity auth.Identity) error
-	GetProjectByID(ctx context.Context, id string) (*ProjectResponse, error)
+	GetProjectByID(ctx context.Context, id uuid.UUID) (*ProjectResponse, error)
 }
 
 type service struct {
@@ -40,7 +40,7 @@ func (s *service) Create(ctx context.Context, input *CreateProjectInput) (*Proje
 	return project.ToResponse(), nil
 }
 
-func (s *service) GetProjectByID(ctx context.Context, id string) (*ProjectResponse, error) {
+func (s *service) GetProjectByID(ctx context.Context, id uuid.UUID) (*ProjectResponse, error) {
 	project, err := s.repo.GetProjectByID(ctx, id)
 	if err != nil {
 		return nil, errors.Internal("get project by id")
@@ -76,7 +76,7 @@ func (s *service) List(ctx context.Context, identity auth.Identity, req ListProj
 }
 
 func (s *service) Update(ctx context.Context, id uuid.UUID, identity auth.Identity, req UpdateProjectRequest) (*ProjectResponse, error) {
-	project, err := s.repo.GetProjectByID(ctx, id.String())
+	project, err := s.repo.GetProjectByID(ctx, id)
 	if err != nil {
 		return nil, errors.Internal("get project by id")
 	}
@@ -101,7 +101,7 @@ func (s *service) Update(ctx context.Context, id uuid.UUID, identity auth.Identi
 }
 
 func (s *service) Delete(ctx context.Context, id uuid.UUID, identity auth.Identity) error {
-	project, err := s.repo.GetProjectByID(ctx, id.String())
+	project, err := s.repo.GetProjectByID(ctx, id)
 	if err != nil {
 		return errors.Internal("get project by id")
 	}

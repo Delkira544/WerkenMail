@@ -15,13 +15,19 @@ type Service interface {
 	CreateTemplate(ctx context.Context, identity auth.Identity, projectID uuid.UUID, req *CreateTemplateRequest) (*TemplateResponse, error)
 }
 
-type service struct {
-	repo Repository
+type ProjectAdapter interface {
+	GetProjectByID(ctx context.Context, projectID uuid.UUID) (*ProjectResponse, error)
 }
 
-func NewService(repo Repository) Service {
+type service struct {
+	repo       Repository
+	projectSvc ProjectAdapter
+}
+
+func NewService(repo Repository, projectSvc ProjectAdapter) Service {
 	return &service{
-		repo: repo,
+		repo:       repo,
+		projectSvc: projectSvc,
 	}
 }
 
@@ -31,6 +37,10 @@ func (s *service) CreateTemplate(ctx context.Context, identity auth.Identity, pr
 	if err != nil {
 		log.Error("Failed to convert template variables", zap.Error(err))
 		return nil, errors.BadRequest("Failed to convert template variables: " + err.Error())
+	}
+	if identity.IsStudent() && identity.UserID != projectID {
+		log.Error("Unauthorized access to project", zap.String("user_id", identity.UserID.String()), zap.String("project_id", projectID.String()))
+		return nil, errors.Unauthorized("You do not have permission to create a template for this project")
 	}
 
 	template := emailtemplate.New(*req.BodyHtml, vars)

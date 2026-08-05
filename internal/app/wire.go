@@ -33,7 +33,7 @@ func buildHandlers(sqlDB *sqlx.DB, ldapClient *ldapclient.Client, cfg config.Con
 	projectsSvc := projects.NewService(projectsRepo)
 
 	templateRepo := template.NewRepository(sqlDB)
-	templateSvc := template.NewService(templateRepo)
+	templateSvc := template.NewService(templateRepo, &projectTemplateAdapter{projectsSvc})
 
 	return &Handlers{
 		Auth:     auth.NewHandler(authSvc),
