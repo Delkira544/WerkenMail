@@ -33,9 +33,7 @@ interface AuthService {
   @summary("Login")
   @doc("Authenticate a user and return the session.")
   @post
-  login(@body body: LoginRequest):
-    | SuccessEnvelope<LoginResponse>
-    | ErrorEnvelope;
+  login(@body body: LoginRequest): StandardResponse<LoginResponse>;
 
   /** Refresca el token de acceso usando un token de actualización. */
   @route("/refresh")

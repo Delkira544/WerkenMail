@@ -8,7 +8,6 @@ namespace WerkenMailApi.Templates;
 model CreateTemplateVariableRequest {
   key: string;
   type: string;
-  required?: boolean;
   default_value?: string;
 }
 
@@ -24,7 +23,6 @@ model TemplateVariable {
   id: string;
   key: string;
   type: string;
-  required: boolean;
   default_value?: string;
 }
 
@@ -46,9 +44,10 @@ interface TemplatesService {
   /** Created a template intro project */
   @post
   @summary("Create Template")
-  create(@path projectId: string, @body body: CreateTemplateRequest):
-    | SuccessEnvelope<Template>
-    | ErrorEnvelope;
+  create(
+    @path projectId: string,
+    @body body: CreateTemplateRequest,
+  ): CreatedStandardResponse<Template>;
 
   /** Get all templates for a project */
   @get
@@ -65,5 +64,20 @@ interface TemplatesService {
   @summary("Get Template by ID")
   get(@path projectId: string, @path templateId: string):
     | SuccessEnvelope<Template>
+    | ErrorEnvelope;
+
+  /** Update a template by ID */
+  @put
+  @summary("Update Template by ID")
+  update(
+    @path projectId: string,
+    @path templateId: string,
+    @body body: CreateTemplateRequest,
+  ): SuccessEnvelope<Template> | ErrorEnvelope;
+
+  @delete
+  @summary("Delete Template by ID")
+  delete(@path projectId: string, @path templateId: string):
+    | void
     | ErrorEnvelope;
 }
