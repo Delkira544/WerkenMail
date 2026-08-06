@@ -1,0 +1,36 @@
+{
+  "$schema": "https://cdn.scalar.com/schema/scalar-config-next.json",
+  "scalar": "2.0.0",
+  "info": {
+    "title": "WerkenMail",
+    "description": "Documentation for WerkenMail"
+  },
+  "siteConfig": {
+    "subdomain": "werkenmail",
+    "theme": "saturn"
+  },
+  "navigation": {
+    "routes": {
+      "/": {
+        "type": "group",
+        "title": "Documentation",
+        "children": {
+          "/": {
+            "title": "Introduction",
+            "type": "page",
+            "filepath": "introduction.mdx",
+            "showInSidebar": true
+          },
+          "/openapi": {
+            "title": "Api Reference",
+            "type": "openapi",
+            "mode": "nested",
+            "singlePage": false,
+            "showInSidebar": true,
+            "filepath": "./typespec/tsp-output/schema/openapi.yaml"
+          }
+        }
+      }
+    }
+  }
+}

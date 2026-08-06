@@ -27,25 +27,33 @@ model Project {
 @route("/projects")
 @tag("Projects")
 interface ProjectsService {
-  /** Crea un nuevo proyecto. */
+  /** Create a new project. */
   @post
+  @summary("Create Project")
   create(@body body: CreateProjectRequest):
     | CreatedEnvelope<Project>
     | ErrorEnvelope;
 
-  /** Lista los proyectos del usuario. */
   @get
+  @summary("Get Project")
+  get(@path id: string): SuccessEnvelope<Project> | ErrorEnvelope;
+
+  /** Get a list of all projects for the authenticated user. */
+  @get
+  @summary("List Projects")
   list(@query search?: string, @query limit?: int32, @query offset?: int32):
     | SuccessEnvelope<Project[]>
     | ErrorEnvelope;
 
-  /** Actualiza un proyecto existente. */
+  /** Update a project by ID. */
   @patch
+  @summary("Update Project")
   update(@path id: string, @body body: UpdateProjectRequest):
     | SuccessEnvelope<Project>
     | ErrorEnvelope;
 
-  /** Elimina un proyecto. */
+  /** Delete a project by ID. */
   @delete
+  @summary("Delete Project")
   delete(@path id: string): void | ErrorEnvelope;
 }

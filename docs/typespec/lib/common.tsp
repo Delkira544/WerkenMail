@@ -61,3 +61,8 @@ model CreatedEnvelope<T> {
   @statusCode statusCode: 201;
   ...SuccessEnvelope<T>;
 }
+
+model BadRequestEnvelope {
+  @statusCode statusCode: 400;
+  ...ErrorEnvelope;
+}

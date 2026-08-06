@@ -31,3 +31,15 @@ docker-logs: ## show logs: make docker-logs SERVICE=api
 .PHONY: docker-dev-logs
 docker-dev-logs: ## show dev logs: make docker-dev-logs SERVICE=api
 	docker compose --env-file .env -f deployments/docker-compose.yml -f deployments/docker-compose.dev.yml logs -f $(SERVICE)
+
+.PHONY: docs-watch
+	docs-watch: ## watch docs changes and rebuild
+
+docs-watch:
+	$(MAKE) -j2 typespec-watch scalar-preview
+
+typespec-watch:
+	cd docs/typespec && tsp compile . --watch
+
+scalar-preview:
+	cd docs && npx @scalar/cli project preview

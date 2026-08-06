@@ -15,6 +15,7 @@ import (
 // grupos de rutas versionadas de cada feature.
 func NewRouter(h *Handlers, cfg config.Config) *gin.Engine {
 	r := gin.New()
+	r.Use(middleware.CorsMiddleware())
 	r.Use(middleware.RequestID())
 	r.Use(middleware.Logger(logger.L()))
 	r.Use(middleware.Recovery())

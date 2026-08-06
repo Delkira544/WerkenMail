@@ -43,9 +43,27 @@ model Template {
 @route("/projects/{projectId}/templates")
 @tag("Templates")
 interface TemplatesService {
-  /** Crea una plantilla dentro de un proyecto. */
+  /** Created a template intro project */
   @post
+  @summary("Create Template")
   create(@path projectId: string, @body body: CreateTemplateRequest):
+    | SuccessEnvelope<Template>
+    | ErrorEnvelope;
+
+  /** Get all templates for a project */
+  @get
+  @summary("Get all Templates for a Project")
+  list(
+    @path projectId: string,
+    @query search?: string,
+    @query limit?: int32,
+    @query offset?: int32,
+  ): SuccessEnvelope<Template[]> | ErrorEnvelope;
+
+  /** Get a template by ID */
+  @get
+  @summary("Get Template by ID")
+  get(@path projectId: string, @path templateId: string):
     | SuccessEnvelope<Template>
     | ErrorEnvelope;
 }

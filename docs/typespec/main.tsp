@@ -8,7 +8,7 @@ using Http;
 
 /** API WerkenMail: envoltorio compartido en lib/common.tsp, features en lib/features/. */
 @service(#{ title: "WerkenMail API" })
-@server("https://kan.bn/api/v1", "Servidor de producción")
+@server("https://api.werkenmail.com/api/v1", "Servidor de producción")
 @server("http://localhost:8080/api/v1", "Servidor de desarrollo")
 @useAuth(MyBearerAuth)
 namespace WerkenMailApi;
