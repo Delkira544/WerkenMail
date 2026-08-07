@@ -37,7 +37,51 @@ func (h *Handler) CreateTemplate(c *gin.Context) {
 		return
 	}
 
-	template, err := h.service.CreateTemplate(c.Request.Context(), identity, id, &req)
+	template, err := h.service.Create(c.Request.Context(), identity, id, &req)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	response.OK(c, template)
+}
+
+func (h *Handler) ListTemplatesByProject(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("project_id"))
+	if err != nil {
+		c.Error(errors.BadRequest("Invalid project ID"))
+		return
+	}
+
+	identity, err := auth.FromGin(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	templates, err := h.service.ListByProjectID(c.Request.Context(), identity, id)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	response.OK(c, templates)
+}
+
+func (h *Handler) GetTemplate(c *gin.Context) {
+	templateID, err := uuid.Parse(c.Param("template_id"))
+	if err != nil {
+		c.Error(errors.BadRequest("Invalid template ID"))
+		return
+	}
+
+	identity, err := auth.FromGin(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	template, err := h.service.GetByID(c.Request.Context(), identity, templateID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -47,10 +91,17 @@ func (h *Handler) CreateTemplate(c *gin.Context) {
 }
 
 func (h *Handler) RegisterRoutes(r *gin.RouterGroup, authMidl gin.HandlerFunc) {
-	template := r.Group("/projects/:project_id/templates")
-	template.Use(authMidl)
+	tempProjects := r.Group("/projects/:project_id/templates")
+	tempProjects.Use(authMidl)
 	{
-		template.POST("", h.CreateTemplate)
+		tempProjects.GET("", h.ListTemplatesByProject)
+		tempProjects.POST("", h.CreateTemplate)
+	}
+
+	templates := r.Group("/templates")
+	templates.Use(authMidl)
+	{
+		templates.GET("/:template_id", h.GetTemplate)
 	}
 
 }

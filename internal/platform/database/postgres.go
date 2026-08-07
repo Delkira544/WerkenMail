@@ -60,6 +60,8 @@ func RunMigrations(pool *pgxpool.Pool, migrationsPath string) error {
 		"postgres",
 		driver,
 	)
+	defer m.Close()
+
 	if err != nil {
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}

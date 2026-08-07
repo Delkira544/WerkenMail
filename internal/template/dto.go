@@ -18,7 +18,6 @@ type CreateTemplateRequest struct {
 type CreateTemplateVariableRequest struct {
 	Key          string  `json:"key" validate:"required"`
 	Type         string  `json:"type" validate:"required"`
-	Required     bool    `json:"required"`
 	DefaultValue *string `json:"default_value,omitempty"`
 }
 
@@ -38,7 +37,6 @@ func (r *CreateTemplateVariableRequest) ToTemplateVariable() (*emailtemplate.Var
 	return &emailtemplate.Variable{
 		Key:          r.Key,
 		Type:         emailtemplate.VariableType(r.Type),
-		Required:     r.Required,
 		DefaultValue: r.DefaultValue,
 	}, nil
 }
@@ -55,11 +53,20 @@ type TemplateResponse struct {
 	UpdatedAt                time.Time                  `json:"updated_at"`
 }
 
+type TemplateListItemResponse struct {
+	ID            uuid.UUID `json:"id"`
+	Name          string    `json:"name"`
+	Subject       string    `json:"subject"`
+	VariableCount int       `json:"variable_count"`
+	Version       uint16    `json:"version"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
 type TemplateVariableResponse struct {
 	ID           uuid.UUID `json:"id"`
 	Key          string    `json:"key"`
 	Type         string    `json:"type"`
-	Required     bool      `json:"required"`
 	DefaultValue *string   `json:"default_value,omitempty"`
 }
 

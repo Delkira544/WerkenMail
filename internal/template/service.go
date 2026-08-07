@@ -12,7 +12,9 @@ import (
 )
 
 type Service interface {
-	CreateTemplate(ctx context.Context, identity auth.Identity, projectID uuid.UUID, req *CreateTemplateRequest) (*TemplateResponse, error)
+	Create(ctx context.Context, identity auth.Identity, projectID uuid.UUID, req *CreateTemplateRequest) (*TemplateResponse, error)
+	GetByID(ctx context.Context, identity auth.Identity, templateID uuid.UUID) (*TemplateResponse, error)
+	ListByProjectID(ctx context.Context, identity auth.Identity, projectID uuid.UUID) ([]TemplateListItemResponse, error)
 }
 
 type ProjectAdapter interface {
@@ -31,16 +33,16 @@ func NewService(repo Repository, projectSvc ProjectAdapter) Service {
 	}
 }
 
-func (s *service) CreateTemplate(ctx context.Context, identity auth.Identity, projectID uuid.UUID, req *CreateTemplateRequest) (*TemplateResponse, error) {
+func (s *service) Create(ctx context.Context, identity auth.Identity, projectID uuid.UUID, req *CreateTemplateRequest) (*TemplateResponse, error) {
 	log := logger.FromContext(ctx)
+	if _, err := s.verifyProjectAccess(ctx, identity, projectID); err != nil {
+		return nil, err
+	}
+
 	vars, err := toTemplateVariableRequests(req.Variables)
 	if err != nil {
 		log.Error("Failed to convert template variables", zap.Error(err))
 		return nil, errors.BadRequest("Failed to convert template variables: " + err.Error())
-	}
-	if identity.IsStudent() && identity.UserID != projectID {
-		log.Error("Unauthorized access to project", zap.String("user_id", identity.UserID.String()), zap.String("project_id", projectID.String()))
-		return nil, errors.Unauthorized("You do not have permission to create a template for this project")
 	}
 
 	template := emailtemplate.New(*req.BodyHtml, vars)
@@ -68,12 +70,105 @@ func (s *service) CreateTemplate(ctx context.Context, identity auth.Identity, pr
 			ID:           uuid.New(),
 			Key:          v.Key,
 			Type:         string(v.Type),
-			Required:     v.Required,
 			DefaultValue: v.DefaultValue,
 		}
 	}
 
 	err = s.repo.Create(ctx, templ, varsModel)
+	if err != nil {
+		log.Error("Failed to create template", zap.Error(err))
+		return nil, errors.Internal("Failed to create template: " + err.Error())
+	}
+	res := make([]TemplateVariableResponse, len(varsModel))
+	for i, v := range varsModel {
+		res[i] = v.ToResponse()
+	}
 
-	return &TemplateResponse{}, nil
+	return &TemplateResponse{
+		ID:                       templ.ID,
+		Name:                     templ.Name,
+		Subject:                  templ.Subject,
+		BodyHtml:                 templ.BodyHtml,
+		BodyText:                 templ.BodyText,
+		Version:                  templ.Version,
+		TemplateVariableResponse: res,
+		CreatedAt:                templ.CreatedAt,
+		UpdatedAt:                templ.UpdatedAt,
+	}, nil
+}
+
+func (s *service) ListByProjectID(ctx context.Context, identity auth.Identity, projectID uuid.UUID) ([]TemplateListItemResponse, error) {
+	if _, err := s.verifyProjectAccess(ctx, identity, projectID); err != nil {
+		return nil, err
+	}
+
+	templates, err := s.repo.GetByProjectID(ctx, projectID)
+	if err != nil {
+		return nil, errors.Internal("list templates")
+	}
+
+	ids := make([]uuid.UUID, len(templates))
+	for i, t := range templates {
+		ids[i] = t.ID
+	}
+
+	counts, err := s.repo.GetVariableCounts(ctx, ids)
+	if err != nil {
+		return nil, errors.Internal("count variables")
+	}
+
+	responses := make([]TemplateListItemResponse, len(templates))
+	for i, t := range templates {
+		responses[i] = t.ToListItemResponse(counts[t.ID])
+	}
+	return responses, nil
+}
+
+func (s *service) GetByID(ctx context.Context, identity auth.Identity, templateID uuid.UUID) (*TemplateResponse, error) {
+	template, err := s.repo.GetByID(ctx, templateID)
+	if err != nil {
+		return nil, errors.Internal("get template by id")
+	}
+	if template == nil {
+		return nil, errors.NotFound("template not found")
+	}
+
+	if _, err := s.verifyProjectAccess(ctx, identity, template.ProjectID); err != nil {
+		return nil, err
+	}
+
+	vars, err := s.repo.GetVariablesByTemplateID(ctx, template.ID)
+	if err != nil {
+		return nil, errors.Internal("get template variables by template id")
+	}
+	if vars == nil {
+		return nil, errors.NotFound("template variables not found")
+	}
+	varsResponse := make([]TemplateVariableResponse, len(vars))
+	for i, v := range vars {
+		varsResponse[i] = v.ToResponse()
+	}
+
+	return &TemplateResponse{
+		ID:                       template.ID,
+		Name:                     template.Name,
+		Subject:                  template.Subject,
+		BodyHtml:                 template.BodyHtml,
+		BodyText:                 template.BodyText,
+		Version:                  template.Version,
+		TemplateVariableResponse: varsResponse,
+		CreatedAt:                template.CreatedAt,
+		UpdatedAt:                template.UpdatedAt,
+	}, nil
+}
+
+func (s *service) verifyProjectAccess(ctx context.Context, identity auth.Identity, projectID uuid.UUID) (*ProjectResponse, error) {
+	project, err := s.projectSvc.GetProjectByID(ctx, projectID)
+	if err != nil {
+		return nil, err
+	}
+	if identity.IsStudent() && project.UserID != identity.UserID {
+		return nil, errors.Forbidden("not the owner")
+	}
+	return project, nil
 }

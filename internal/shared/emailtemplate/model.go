@@ -2,6 +2,7 @@ package emailtemplate
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -17,7 +18,6 @@ type Template struct {
 type Variable struct {
 	Key          string
 	Type         VariableType // string, url, number, etc.
-	Required     bool
 	DefaultValue *string
 }
 
@@ -79,9 +79,34 @@ func (t *Template) Validate() error {
 	if len(missing) > 0 {
 		return fmt.Errorf("undeclared placeholder: %v", missing)
 	}
+
+	err = t.ValidateVariableTypes()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
+func (t *Template) ValidateVariableTypes() error {
+	for _, v := range t.variables {
+		switch v.Type {
+		case VarTypeString:
+			if v.DefaultValue != nil && *v.DefaultValue == "" {
+				return fmt.Errorf("variable %q has an empty default value", v.Key)
+			}
+		case VarTypeNumber:
+			if v.DefaultValue != nil {
+				_, err := strconv.Atoi(*v.DefaultValue)
+				if err != nil {
+					return fmt.Errorf("variable %q has an invalid default value: %v", v.Key, err)
+				}
+			}
+		default:
+			return fmt.Errorf("variable %q has an unknown type: %q", v.Key, v.Type)
+		}
+	}
+	return nil
+}
 func (t *Template) Sanitize() (string, error) {
 	p := bluemonday.UGCPolicy()
 	clean := p.Sanitize(t.rawHTML)

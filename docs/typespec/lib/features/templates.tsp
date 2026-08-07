@@ -38,10 +38,20 @@ model Template {
   updated_at: string;
 }
 
+model TemplateListItemResponse {
+  id: string;
+  name: string;
+  subject: string;
+  variable_count: int32;
+  version: uint16;
+  created_at: string;
+  updated_at: string;
+}
+
 @route("/projects/{projectId}/templates")
 @tag("Templates")
-interface TemplatesService {
-  /** Created a template intro project */
+interface ProjectTemplatesService {
+  /** Create a template inside a project */
   @post
   @summary("Create Template")
   create(
@@ -57,27 +67,29 @@ interface TemplatesService {
     @query search?: string,
     @query limit?: int32,
     @query offset?: int32,
-  ): SuccessEnvelope<Template[]> | ErrorEnvelope;
+  ): SuccessEnvelope<TemplateListItemResponse[]> | ErrorEnvelope;
+}
 
+@route("/templates")
+@tag("Templates")
+interface TemplatesService {
   /** Get a template by ID */
   @get
+  @route("/{templateId}")
   @summary("Get Template by ID")
-  get(@path projectId: string, @path templateId: string):
-    | SuccessEnvelope<Template>
-    | ErrorEnvelope;
+  get(@path templateId: string): SuccessEnvelope<Template> | ErrorEnvelope;
 
   /** Update a template by ID */
   @put
+  @route("/{templateId}")
   @summary("Update Template by ID")
-  update(
-    @path projectId: string,
-    @path templateId: string,
-    @body body: CreateTemplateRequest,
-  ): SuccessEnvelope<Template> | ErrorEnvelope;
-
-  @delete
-  @summary("Delete Template by ID")
-  delete(@path projectId: string, @path templateId: string):
-    | void
+  update(@path templateId: string, @body body: CreateTemplateRequest):
+    | SuccessEnvelope<Template>
     | ErrorEnvelope;
+
+  /** Delete a template by ID */
+  @delete
+  @route("/{templateId}")
+  @summary("Delete Template by ID")
+  delete(@path templateId: string): void | ErrorEnvelope;
 }
