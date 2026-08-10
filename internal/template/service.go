@@ -35,8 +35,13 @@ func NewService(repo Repository, projectSvc ProjectAdapter) Service {
 
 func (s *service) Create(ctx context.Context, identity auth.Identity, projectID uuid.UUID, req *CreateTemplateRequest) (*TemplateResponse, error) {
 	log := logger.FromContext(ctx)
+
 	if _, err := s.verifyProjectAccess(ctx, identity, projectID); err != nil {
 		return nil, err
+	}
+
+	if req.BodyHtml == nil {
+		return nil, errors.BadRequest("body_html is required")
 	}
 
 	vars, err := toTemplateVariableRequests(req.Variables)
@@ -45,26 +50,30 @@ func (s *service) Create(ctx context.Context, identity auth.Identity, projectID 
 		return nil, errors.BadRequest("Failed to convert template variables: " + err.Error())
 	}
 
-	template := emailtemplate.New(*req.BodyHtml, vars)
+	bodyText := ""
+	if req.BodyText != nil {
+		bodyText = *req.BodyText
+	}
 
-	err = template.Validate()
-	if err != nil {
+	et := emailtemplate.New(req.Subject, *req.BodyHtml, bodyText, vars)
+	if err := et.Validate(); err != nil {
 		log.Error("Template validation failed", zap.Error(err))
 		return nil, errors.BadRequest("Template validation failed: " + err.Error())
 	}
+
+	sanitizedHTML := et.SanitizedBodyHTML()
 
 	templ := &Template{
 		ID:        uuid.New(),
 		ProjectID: projectID,
 		Name:      req.Name,
 		Subject:   req.Subject,
-		BodyHtml:  req.BodyHtml,
+		BodyHtml:  &sanitizedHTML,
 		BodyText:  req.BodyText,
 		Version:   1,
 	}
 
 	varsModel := make([]TemplateVariable, len(vars))
-
 	for i, v := range vars {
 		varsModel[i] = TemplateVariable{
 			ID:           uuid.New(),
@@ -74,11 +83,11 @@ func (s *service) Create(ctx context.Context, identity auth.Identity, projectID 
 		}
 	}
 
-	err = s.repo.Create(ctx, templ, varsModel)
-	if err != nil {
+	if err := s.repo.Create(ctx, templ, varsModel); err != nil {
 		log.Error("Failed to create template", zap.Error(err))
-		return nil, errors.Internal("Failed to create template: " + err.Error())
+		return nil, errors.Internal("Failed to create template")
 	}
+
 	res := make([]TemplateVariableResponse, len(varsModel))
 	for i, v := range varsModel {
 		res[i] = v.ToResponse()

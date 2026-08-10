@@ -8,16 +8,16 @@ import (
 )
 
 type CreateTemplateRequest struct {
-	Name      string                          `json:"name" validate:"required"`
-	Subject   string                          `json:"subject" validate:"required"`
-	BodyHtml  *string                         `json:"body_html" validate:"required"`
+	Name      string                          `json:"name" binding:"required"`
+	Subject   string                          `json:"subject" binding:"required"`
+	BodyHtml  *string                         `json:"body_html" binding:"required"`
 	BodyText  *string                         `json:"body_text"`
 	Variables []CreateTemplateVariableRequest `json:"variables"`
 }
 
 type CreateTemplateVariableRequest struct {
-	Key          string  `json:"key" validate:"required"`
-	Type         string  `json:"type" validate:"required"`
+	Key          string  `json:"key" binding:"required"`
+	Type         string  `json:"type" binding:"required"`
 	DefaultValue *string `json:"default_value,omitempty"`
 }
 

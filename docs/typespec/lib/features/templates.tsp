@@ -5,12 +5,23 @@ using Http;
 
 namespace WerkenMailApi.Templates;
 
+@example(#{ key: "user_name", type: "string", default_value: "Juan Pérez" })
 model CreateTemplateVariableRequest {
   key: string;
   type: string;
   default_value?: string;
 }
 
+@example(#{
+  name: "Bienvenida Usuario Nuevo",
+  subject: "¡Bienvenido a {{app_name}}, {{user_name}}!",
+  body_html: "<table role=\"presentation\" width=\"100%\"><tr><td style=\"padding: 20px; font-family: Arial;\"><h1>Hola {{user_name}}</h1><p>Gracias por registrarte en {{app_name}}.</p></td></tr></table>",
+  body_text: "Hola {{user_name}}, gracias por registrarte en {{app_name}}.",
+  variables: #[
+    #{ key: "user_name", type: "string", default_value: "Juan Pérez" },
+    #{ key: "app_name", type: "string", default_value: "WerkenMail" }
+  ],
+})
 model CreateTemplateRequest {
   name: string;
   subject: string;

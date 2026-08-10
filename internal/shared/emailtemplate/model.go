@@ -2,22 +2,22 @@ package emailtemplate
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/microcosm-cc/bluemonday"
-	"golang.org/x/net/html"
 )
 
 type Template struct {
-	rawHTML   string
+	subject   string
+	bodyHTML  string
+	bodyText  string
 	variables []Variable
-	doc       *html.Node // resultado del parseo, guardado tras Parse()
 }
 
 type Variable struct {
 	Key          string
-	Type         VariableType // string, url, number, etc.
+	Type         VariableType // string, number
 	DefaultValue *string
 }
 
@@ -28,33 +28,42 @@ const (
 	VarTypeNumber VariableType = "number"
 )
 
-func New(rawHTML string, variables []Variable) *Template {
+var (
+	placeholderRe = regexp.MustCompile(`\{\{\s*(\w+)\s*\}\}`)
+	openBraceRe   = regexp.MustCompile(`\{\{`)
+)
+
+func New(subject, bodyHTML, bodyText string, variables []Variable) *Template {
 	return &Template{
-		rawHTML:   rawHTML,
+		subject:   subject,
+		bodyHTML:  bodyHTML,
+		bodyText:  bodyText,
 		variables: variables,
 	}
 }
 
-func (t *Template) Parse() error {
-	doc, err := html.ParseFragment(strings.NewReader(t.rawHTML), nil)
-	if err != nil {
-		return err
-	}
-	t.doc = &html.Node{
-		Type: html.ElementNode,
-		Data: "div",
-	}
-	for _, n := range doc {
-		t.doc.AppendChild(n)
-	}
-	return nil
+func (t *Template) GetVariables() []Variable {
+	return t.variables
 }
 
+// SanitizedBodyHTML devuelve el body_html tal como quedó después de Validate() (ya sanitizado).
+func (t *Template) SanitizedBodyHTML() string {
+	return t.bodyHTML
+}
+
+// Validate corre todo el pipeline: texto plano -> sanitización -> extracción -> consistencia -> tipos.
 func (t *Template) Validate() error {
-	extracted, err := t.ExtractVariables()
-	if err != nil {
+	if err := t.validatePlainText(); err != nil {
 		return err
 	}
+	t.sanitize() // muta t.bodyHTML in place
+
+	combined := t.subject + " " + t.bodyHTML + " " + t.bodyText
+	if err := validatePlaceholderSyntax(combined); err != nil {
+		return err
+	}
+
+	extracted := t.extractPlaceholders()
 	declared := map[string]Variable{}
 	for _, v := range t.variables {
 		declared[v.Key] = v
@@ -63,13 +72,14 @@ func (t *Template) Validate() error {
 	for _, k := range extracted {
 		extractedSet[k] = true
 	}
-	// 1) Variables declaradas pero ausentes en el HTML
+
+	// 1) Variables declaradas pero ausentes en subject+body_html+body_text
 	for _, v := range t.variables {
 		if !extractedSet[v.Key] {
-			return fmt.Errorf("variable %q declarated but not found in the template", v.Key)
+			return fmt.Errorf("variable %q declared but not found in the template", v.Key)
 		}
 	}
-	// 2) Placeholders extraídos sin declaración
+	// 2) Placeholders usados sin declaración
 	var missing []string
 	for _, k := range extracted {
 		if _, ok := declared[k]; !ok {
@@ -80,14 +90,28 @@ func (t *Template) Validate() error {
 		return fmt.Errorf("undeclared placeholder: %v", missing)
 	}
 
-	err = t.ValidateVariableTypes()
-	if err != nil {
-		return err
+	return t.validateVariableTypes()
+}
+
+// validatePlainText rechaza HTML en subject/body_text — son campos de texto plano por diseño.
+func (t *Template) validatePlainText() error {
+	strict := bluemonday.StrictPolicy()
+	if strict.Sanitize(t.subject) != t.subject {
+		return fmt.Errorf("subject must not contain HTML")
+	}
+	if strict.Sanitize(t.bodyText) != t.bodyText {
+		return fmt.Errorf("body_text must not contain HTML")
 	}
 	return nil
 }
 
-func (t *Template) ValidateVariableTypes() error {
+// sanitize limpia body_html contra XSS. No falla si el resultado queda vacío
+// (un HTML legítimamente vacío tras sanitizar no es un error).
+func (t *Template) sanitize() {
+	t.bodyHTML = bluemonday.UGCPolicy().Sanitize(t.bodyHTML)
+}
+
+func (t *Template) validateVariableTypes() error {
 	for _, v := range t.variables {
 		switch v.Type {
 		case VarTypeString:
@@ -96,8 +120,7 @@ func (t *Template) ValidateVariableTypes() error {
 			}
 		case VarTypeNumber:
 			if v.DefaultValue != nil {
-				_, err := strconv.Atoi(*v.DefaultValue)
-				if err != nil {
+				if _, err := strconv.Atoi(*v.DefaultValue); err != nil {
 					return fmt.Errorf("variable %q has an invalid default value: %v", v.Key, err)
 				}
 			}
@@ -107,32 +130,31 @@ func (t *Template) ValidateVariableTypes() error {
 	}
 	return nil
 }
-func (t *Template) Sanitize() (string, error) {
-	p := bluemonday.UGCPolicy()
-	clean := p.Sanitize(t.rawHTML)
-	if clean == "" {
-		return "", fmt.Errorf("Error to sanitized html")
-	}
-	return clean, nil
-}
 
-func (t *Template) GetVariables() []Variable {
-	return t.variables
-}
-
-func (t *Template) ExtractVariables() ([]string, error) {
-	matches := placeholderRe.FindAllStringSubmatch(t.rawHTML, -1)
+// extractPlaceholders busca {{key}} en subject, body_html y body_text combinados.
+func (t *Template) extractPlaceholders() []string {
+	text := t.subject + " " + t.bodyHTML + " " + t.bodyText
+	matches := placeholderRe.FindAllStringSubmatch(text, -1)
 	seen := map[string]bool{}
-	var vars []string
+	var keys []string
 	for _, m := range matches {
 		if !seen[m[1]] {
 			seen[m[1]] = true
-			vars = append(vars, m[1])
+			keys = append(keys, m[1])
 		}
 	}
-	return vars, nil
+	return keys
+}
+
+func validatePlaceholderSyntax(text string) error {
+	opens := len(openBraceRe.FindAllString(text, -1))
+	valid := len(placeholderRe.FindAllString(text, -1))
+	if opens != valid {
+		return fmt.Errorf("malformed placeholder syntax detected — expected \"{{key}}\", got unbalanced or invalid braces")
+	}
+	return nil
 }
 
 func (t *Template) Render(data map[string]string) (string, error) {
-	return "", nil
+	return "", fmt.Errorf("not implemented")
 }
